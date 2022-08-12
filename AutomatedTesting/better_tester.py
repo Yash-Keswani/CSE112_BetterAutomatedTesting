@@ -15,9 +15,12 @@ here = os.path.dirname(os.path.realpath(__file__))
 asm_tests_hard_dir = here + "/tests/assembly/hardBin"
 bin_tests_hard_dir = here + "/tests/bin/hard"
 fin_tests_hard_dir = here + "/tests/traces/hard"
+
 asm_tests_dir = here + "/tests/assembly/simpleBin"
 bin_tests_dir = here + "/tests/bin/simple"
 fin_tests_dir = here + "/tests/traces/simple"
+
+err_tests_dir = here + "/tests/assembly/errorGen"
 
 ASM = here + "/../SimpleAssembler"
 SIM = here + "/../SimpleSimulator"
@@ -29,6 +32,7 @@ fins_hard = os.listdir(fin_tests_hard_dir)
 asms = os.listdir(asm_tests_dir)
 bins = os.listdir(bin_tests_dir)
 fins = os.listdir(fin_tests_dir)
+errs = os.listdir(err_tests_dir)
 
 class AsmTest(unittest.TestCase):
 	maxDiff = 400
@@ -49,6 +53,19 @@ class AsmTest(unittest.TestCase):
 				with open(control_out_dir + "/" + b) as fl:
 					control = fl.read()
 					self.assertEqual(control, experimental)
+
+	def testErrors(self):
+		os.chdir(ASM)
+		for case in errs:
+			with self.subTest(msg=case):
+				with open(err_tests_dir + "/" + case) as fl:
+					experimental_in = fl.read()
+				
+				with open("run") as run_script_file:
+					run_script = run_script_file.read().split(' ')
+
+				print(f"\nRunning {case}")
+				print(subprocess.check_output(run_script, input=experimental_in, text=True, timeout=5), end='')
 
 	def testAssemblerHard(self):
 		self.factory(ASM, asm_tests_hard_dir, bin_tests_hard_dir)
@@ -87,17 +104,6 @@ class Graded_TextTestResult(unittest.TextTestResult):
 
 if __name__ == '__main__':
 	suite = unittest.TestLoader().loadTestsFromTestCase(AsmTest)
-	"""
-	here = os.path.dirname(os.path.realpath(__file__))
-	asm_tests_dir = here + "/tests/assembly/hardBin"
-	bin_tests_dir = here + "/tests/bin/hard"
-	fin_tests_dir = here + "/tests/traces/hard"
-
-	ASM = here + "/../SimpleAssembler"
-	SIM = here + "/../SimpleSimulator"
-	suite = unittest.TestSuite()
-	suite.addTest(AsmTest.factory(ASM, asm_tests_dir, bin_tests_dir))
-	"""
 	with open(os.devnull, 'w') as nullstream:
 		runner = unittest.TextTestRunner(resultclass= Graded_TextTestResult, verbosity=0, stream=nullstream)
 		result = runner.run(suite)
@@ -124,4 +130,6 @@ if __name__ == '__main__':
 			SCORE = HARD_SCORE
 		else:
 			SCORE = SIMPLE_SCORE
+		if 'error' in testname.lower():
+			continue
 		print(f"{testname.lstrip('test')} - {testresults['successes']*SCORE}/{testresults['total']*SCORE}")
