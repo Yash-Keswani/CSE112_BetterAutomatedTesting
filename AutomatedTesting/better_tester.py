@@ -8,9 +8,10 @@ import unittest
 
 HARD_SCORE = 20
 SIMPLE_SCORE = 5
+MAX_DIFF_SIZE = 500
 
-EFFECTS = {'HEADER' : '\033[95m', 'CYAN' : '\033[96m', 'PASS' : '\033[92m', 'CRASHED' : '\033[93m',
-'FAIL' : '\033[91m', 'BOLD' : '\033[1m', 'UNDERLINE'	 : '\033[4m', 'MAGENTA'	:	'\033[35m'}
+EFFECTS = {'CYAN' : '\033[96m', 'GREEN' : '\033[92m', 'YELLOW' : '\033[93m',
+'RED' : '\033[91m', 'BOLD' : '\033[1m', 'UNDERLINE'	 : '\033[4m', 'MAGENTA'	:	'\033[35m'}
 
 EFFECTS_CLOSE = '\033[0m'
 MANUAL_GRADED = ['error', 'image']
@@ -45,7 +46,7 @@ errs = os.listdir(err_tests_dir)
 imgs = os.listdir(img_tests_dir)
 
 class AsmTest(unittest.TestCase):
-	maxDiff = 400
+	maxDiff = MAX_DIFF_SIZE
 	def factory(self, cwd, control_out_dir, experimental_in_dir):
 		control_out_files = os.listdir(control_out_dir)
 		experimental_in_files = os.listdir(experimental_in_dir)
@@ -145,11 +146,11 @@ if __name__ == '__main__':
 		aprint(f"\nRunning {testname.lstrip('test')}", 'CYAN', 'BOLD')
 		for subtest in rslt:
 			if subtest["status"] == Graded_TextTestResult.TestStatus.FAILURE:
-				aprint("[FAIL]", 'FAIL', end=' ')
+				aprint("[FAIL]", 'RED', end=' ')
 			elif subtest["status"] == Graded_TextTestResult.TestStatus.CRASHED:
-				aprint("[CRSH]", 'CRASH', end=' ')
+				aprint("[CRSH]", 'YELLOW', end=' ')
 			elif subtest["status"] == Graded_TextTestResult.TestStatus.SUCCESS:
-				aprint("[PASS]", 'PASS', end=' ')
+				aprint("[PASS]", 'GREEN', end=' ')
 			else:
 				raise ValueError("Invalid Status")
 		
