@@ -92,6 +92,8 @@ class AsmTest(unittest.TestCase):
 
 	def testImages(self):
 		os.chdir(SIM)
+		if len(imgs) == 1 and imgs[0] == 'gnrtd.png':  # null case
+			return 
 		aprint("\nGenerating Images", 'BOLD', 'CYAN')
 		for casefile in imgs:
 			case = casefile.rstrip('.png')
