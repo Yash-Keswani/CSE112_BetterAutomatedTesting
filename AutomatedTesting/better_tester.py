@@ -2,6 +2,7 @@ __unittest = True
 
 from collections import defaultdict
 from dataclasses import dataclass
+import enum
 import itertools
 import os
 import subprocess
@@ -57,22 +58,43 @@ class AsmTest(unittest.TestCase):
 					# self.assertEqual(byt_out.strip(), fin.strip())
 
 class Graded_TextTestResult(unittest.TextTestResult):
+	class TestStatus(enum.Enum):
+		FAILURE = 0
+		SUCCESS = 1
+		CRASHED = -1
 	def __init__(self, stream: TextIO, descriptions: bool, verbosity: int) -> None:
 		super().__init__(stream, descriptions, verbosity)
 		self.stats = defaultdict(lambda: {"failures": 0, "successes": 0, "total": 0})
+		self.testResults = defaultdict(list)
 
 	def addSubTest(self, test: unittest.case.TestCase, subtest: unittest.case.TestCase, err) -> None:
 		super().addSubTest(test, subtest, err)
 		self.stats[test._testMethodName]["total"] += 1
 		if err is None:
-			self.stats[test._testMethodName]["failures"] += 1
-		else:
+			self.testResults[test._testMethodName].append({"name": subtest._message, "status": self.TestStatus.SUCCESS, "error": err})
 			self.stats[test._testMethodName]["successes"] += 1
+		else:
+			self.testResults[test._testMethodName].append({"name": subtest._message, "status": self.TestStatus.FAILURE, "error": err})
+			self.stats[test._testMethodName]["failures"] += 1
 
 if __name__ == '__main__':
 	suite = unittest.TestLoader().loadTestsFromTestCase(AsmTest)
 	with open(os.devnull, 'w') as nullstream:
 		runner = unittest.TextTestRunner(resultclass= Graded_TextTestResult, verbosity=0, stream=nullstream)
 		result = runner.run(suite)
-
+	
+	for testname, rslt in result.testResults.items():
+		print(f"Running {testname}")
+		for subtest in rslt:
+			if subtest["status"] == Graded_TextTestResult.TestStatus.FAILURE:
+				pretext = "[FAIL]"
+			elif subtest["status"] == Graded_TextTestResult.TestStatus.CRASHED:
+				pretext = "[CRASHED]"
+			elif subtest["status"] == Graded_TextTestResult.TestStatus.SUCCESS:
+				pretext = "[PASS]"
+			else:
+				raise ValueError("Invalid Status")
+		
+			print(f"{pretext} {subtest['name']}")
+				
 	print(dict(result.stats))
