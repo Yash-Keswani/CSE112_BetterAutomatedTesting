@@ -27,6 +27,7 @@ fin_tests_hard_dir = here + "/tests/traces/hard"
 asm_tests_dir = here + "/tests/assembly/simpleBin"
 bin_tests_dir = here + "/tests/bin/simple"
 fin_tests_dir = here + "/tests/traces/simple"
+img_tests_dir = here + "/tests/images"
 
 err_tests_dir = here + "/tests/assembly/errorGen"
 
@@ -41,6 +42,7 @@ asms = os.listdir(asm_tests_dir)
 bins = os.listdir(bin_tests_dir)
 fins = os.listdir(fin_tests_dir)
 errs = os.listdir(err_tests_dir)
+imgs = os.listdir(img_tests_dir)
 
 class AsmTest(unittest.TestCase):
 	maxDiff = 400
@@ -87,6 +89,24 @@ class AsmTest(unittest.TestCase):
 
 	def testSimulator(self):
 		self.factory(ASM, bin_tests_dir, fin_tests_dir)
+
+	def testImages(self):
+		os.chdir(SIM)
+		aprint("\nGenerating Images", 'BOLD', 'CYAN')
+		for casefile in imgs:
+			case = casefile.rstrip('.png')
+			if case.endswith("gnrtd"):
+				continue
+			with self.subTest(msg=case):
+				with open(bin_tests_hard_dir + "/" + case) as fl:
+					experimental_in = fl.read()
+				
+				with open("run") as run_script_file:
+					run_script = run_script_file.read().split(' ')
+					run_script.extend(['--generate', {case}])
+
+				aprint(f"{case}", 'UNDERLINE')
+				subprocess.run(run_script, input=experimental_in, text=True, timeout=5)
 
 class Graded_TextTestResult(unittest.TextTestResult):
 	class TestStatus(enum.Enum):
