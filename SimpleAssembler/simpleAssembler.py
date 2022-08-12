@@ -1,0 +1,3 @@
+# INSERT YOUR ASSEMBLER SCRIPT HERE
+
+print("hello")
