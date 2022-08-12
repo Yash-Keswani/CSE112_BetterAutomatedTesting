@@ -3,13 +3,21 @@ __unittest=True  # comment this line for full traceback
 from collections import defaultdict
 import enum
 import os
-from socket import timeout
 import subprocess
-from typing import TextIO
 import unittest
 
 HARD_SCORE = 20
 SIMPLE_SCORE = 5
+
+EFFECTS = {'HEADER' : '\033[95m', 'CYAN' : '\033[96m', 'PASS' : '\033[92m', 'CRASHED' : '\033[93m',
+'FAIL' : '\033[91m', 'BOLD' : '\033[1m', 'UNDERLINE'	 : '\033[4m', 'MAGENTA'	:	'\033[35m'}
+
+EFFECTS_CLOSE = '\033[0m'
+MANUAL_GRADED = ['error', 'image']
+	
+def aprint(text, *args, **kwargs):
+	applied_effs = [EFFECTS[x] for x in args if x in EFFECTS]
+	print(''.join(applied_effs) + text + EFFECTS_CLOSE, **kwargs)
 
 here = os.path.dirname(os.path.realpath(__file__))
 asm_tests_hard_dir = here + "/tests/assembly/hardBin"
@@ -56,6 +64,7 @@ class AsmTest(unittest.TestCase):
 
 	def testErrors(self):
 		os.chdir(ASM)
+		aprint("Running Errors", 'BOLD', 'CYAN', end = '')
 		for case in errs:
 			with self.subTest(msg=case):
 				with open(err_tests_dir + "/" + case) as fl:
@@ -64,7 +73,7 @@ class AsmTest(unittest.TestCase):
 				with open("run") as run_script_file:
 					run_script = run_script_file.read().split(' ')
 
-				print(f"\nRunning {case}")
+				aprint(f"\n{case}", 'UNDERLINE')
 				print(subprocess.check_output(run_script, input=experimental_in, text=True, timeout=5), end='')
 
 	def testAssemblerHard(self):
@@ -84,12 +93,12 @@ class Graded_TextTestResult(unittest.TextTestResult):
 		FAILURE = 0
 		SUCCESS = 1
 		CRASHED = -1
-	def __init__(self, stream: TextIO, descriptions: bool, verbosity: int) -> None:
+	def __init__(self, stream, descriptions, verbosity):
 		super().__init__(stream, descriptions, verbosity)
 		self.stats = defaultdict(lambda: {"failures": 0, "successes": 0, "total": 0})
 		self.testResults = defaultdict(list)
 
-	def addSubTest(self, test: unittest.case.TestCase, subtest: unittest.case.TestCase, err) -> None:
+	def addSubTest(self, test, subtest, err):
 		super().addSubTest(test, subtest, err)
 		self.stats[test._testMethodName]["total"] += 1
 		if err is None:
@@ -109,27 +118,30 @@ if __name__ == '__main__':
 		result = runner.run(suite)
 	
 	for testname, rslt in result.testResults.items():
-		print(f"\nRunning {testname.lstrip('test')}")
+		if any(x in testname.lower() for x in MANUAL_GRADED):
+			continue
+		aprint(f"\nRunning {testname.lstrip('test')}", 'CYAN', 'BOLD')
 		for subtest in rslt:
 			if subtest["status"] == Graded_TextTestResult.TestStatus.FAILURE:
-				pretext = "[FAIL]"
+				aprint("[FAIL]", 'FAIL', end=' ')
 			elif subtest["status"] == Graded_TextTestResult.TestStatus.CRASHED:
-				pretext = "[CRASHED]"
+				aprint("[CRSH]", 'CRASH', end=' ')
 			elif subtest["status"] == Graded_TextTestResult.TestStatus.SUCCESS:
-				pretext = "[PASS]"
+				aprint("[PASS]", 'PASS', end=' ')
 			else:
 				raise ValueError("Invalid Status")
 		
-			print(f"{pretext} {subtest['name']}")
+			print(subtest['name'])
 				
-	print("\n\n==============")
-	print("TOTAL SCORES")
-	print("==============")
+	aprint("\n\n============", 'CYAN')
+	aprint("TOTAL SCORES", 'MAGENTA', 'BOLD')
+	aprint("============", 'CYAN')
 	for testname, testresults in result.stats.items():
+		if any(x in testname.lower() for x in MANUAL_GRADED):
+			continue
 		if 'hard' in testname.lower():
 			SCORE = HARD_SCORE
 		else:
 			SCORE = SIMPLE_SCORE
-		if 'error' in testname.lower():
-			continue
-		print(f"{testname.lstrip('test')} - {testresults['successes']*SCORE}/{testresults['total']*SCORE}")
+		aprint(testname.lstrip('test'), 'BOLD', end = '')
+		print(f" - {testresults['successes']*SCORE}/{testresults['total']*SCORE}")
