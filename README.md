@@ -10,4 +10,4 @@ use `./run` in `AutomatedTesting` to run it in grading mode.
 
 use `python3 -m unittest discover -f better_tester.py` in AutomatedTesting to run it in debugging mode, which will show assert results.
 
-reply ping with any suggestions / bugs
+mail me at yash20158@iiitd.ac.in to report any bugs / suggestions, or use the issues tab here.
